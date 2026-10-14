@@ -1,0 +1,27 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shorts Studio</title><link rel="stylesheet" href="styles.css"></head><body data-page="studio"><main>
+<h1>Shorts Studio</h1><p class="sub">60 vertical shorts (one per selected material/tool). Preview and render 1080x1920 WebM right in the browser. Voiceover + auto-upload run via <code>pipeline/run_pipeline.py</code>.</p>
+<div class="disc">Every short ends with the Amazon Associate disclosure, and the description carries your affiliate links. Set your tag in <b>data.js</b> / <b>pipeline</b> first (currently YOURTAG-20).</div>
+<div class="ctrl"><select id="sel"></select><button id="play">Preview &amp; record</button><button id="all">Record ALL 60 (sequential downloads)</button><a id="dl" style="display:none"></a></div>
+<div class="vid"><canvas id="cv" width="1080" height="1920"></canvas></div><pre id="meta" class="note" style="white-space:pre-wrap"></pre>
+<div class="tw"><table><thead><tr><th>ID</th><th>Step</th><th>Kind</th><th>Item</th><th>Title</th><th>Status</th></tr></thead><tbody id="tb"></tbody></table></div>
+</main><script src="data.js"></script><script src="shorts-data.js"></script><script src="app.js"></script><script>
+const cv=document.getElementById('cv'),cx=cv.getContext('2d'),W=1080,H=1920;
+document.getElementById('sel').innerHTML=SHORTS.map((s,i)=>'<option value="'+i+'">'+s.id+' - '+s.item+'</option>').join('');
+document.getElementById('tb').innerHTML=SHORTS.map(s=>'<tr><td>'+s.id+'</td><td>S'+String(s.step).padStart(2,'0')+'</td><td>'+s.kind+'</td><td>'+s.item+'</td><td class="wrap">'+s.title+'</td><td id="st-'+s.id+'">ready</td></tr>').join('');
+const imgCache={};function loadImg(u){return imgCache[u]||(imgCache[u]=new Promise(r=>{const i=new Image();i.crossOrigin='anonymous';i.onload=()=>r(i);i.onerror=()=>r(null);i.src=u.replace('_AC_UL320_','_AC_SL800_')}))}
+function wrap(t,x,y,mw,lh,max){const w=t.split(' ');let l='',n=0;for(const k of w){if(cx.measureText(l+k).width>mw){cx.fillText(l,x,y);y+=lh;l='';if(++n>=max)return}l+=k+' '}cx.fillText(l,x,y)}
+async function frame(sh,sc,t){const g=cx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#0f1419');g.addColorStop(1,'#1d2a38');cx.fillStyle=g;cx.fillRect(0,0,W,H);cx.textAlign='center';
+ cx.fillStyle='#f5a524';cx.font='bold 44px sans-serif';cx.fillText('STEP '+sh.step+' | '+sh.stepName.toUpperCase(),W/2,150);
+ if(sc.type==='title'){cx.fillStyle='#fff';cx.font='bold 96px sans-serif';wrap(sc.text,W/2,760,900,120,4);cx.fillStyle='#8fa1b3';cx.font='52px sans-serif';wrap(sc.sub,W/2,1250,900,70,3)}
+ if(sc.type==='product'){const im=await loadImg(sc.img);cx.fillStyle='#f5a524';cx.font='bold 220px sans-serif';cx.fillText('#'+sc.rank,W/2,470);cx.fillStyle='#fff';cx.fillRect(190,540,700,700);if(im){const r=Math.min(660/im.width,660/im.height);cx.drawImage(im,540-im.width*r/2,890-im.height*r/2,im.width*r,im.height*r)}
+  cx.fillStyle='#fff';cx.font='bold 52px sans-serif';wrap(sc.text,W/2,1340,940,66,3);cx.fillStyle='#41c98a';cx.font='bold 60px sans-serif';cx.fillText(sc.sub.split('|')[0].trim(),W/2,1590);cx.fillStyle='#8fa1b3';cx.font='42px sans-serif';cx.fillText(sc.sub.split('|').slice(1).join('|').trim(),W/2,1660)}
+ if(sc.type==='cta'){cx.fillStyle='#fff';cx.font='bold 96px sans-serif';wrap(sc.text,W/2,820,900,120,3);cx.fillStyle='#f5a524';cx.font='bold 56px sans-serif';cx.fillText('Follow for the next step',W/2,1150);cx.fillStyle='#8fa1b3';cx.font='38px sans-serif';wrap(sc.sub,W/2,1700,900,50,3)}
+ cx.fillStyle='#f5a524';cx.fillRect(0,H-14,W*t,14)}
+async function render(i,record){const sh=SHORTS[i];document.getElementById('meta').textContent=sh.title+'\n\n'+sh.description;const dur=5500;let rec,chunks=[];
+ if(record){const st=cv.captureStream(30);rec=new MediaRecorder(st,{mimeType:'video/webm;codecs=vp9',videoBitsPerSecond:6e6});rec.ondataavailable=e=>chunks.push(e.data);rec.start()}
+ for(const sc of sh.scenes){await frame(sh,sc,0);const t0=performance.now();while(performance.now()-t0<dur){await frame(sh,sc,(performance.now()-t0)/dur);await new Promise(r=>requestAnimationFrame(r))}}
+ if(record){await new Promise(r=>{rec.onstop=r;rec.stop()});const a=document.getElementById('dl');a.href=URL.createObjectURL(new Blob(chunks,{type:'video/webm'}));a.download=sh.id+'.webm';a.click();document.getElementById('st-'+sh.id).textContent='rendered'}}
+document.getElementById('play').onclick=()=>render(+document.getElementById('sel').value,true);
+document.getElementById('all').onclick=async()=>{for(let i=0;i<SHORTS.length;i++)await render(i,true)};
+frame(SHORTS[0],SHORTS[0].scenes[0],0);
+</script></body></html>

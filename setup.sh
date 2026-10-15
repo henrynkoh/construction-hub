@@ -36,12 +36,12 @@ command -v ffmpeg >/dev/null || brew install ffmpeg
 say_step "3/7 Downloading pipeline files"
 curl -fsSL "$BASE/run_pipeline.py" -o run_pipeline.py
 curl -fsSL "$BASE/shorts.json" -o shorts.json
-sed -i '' "s/YOURTAG-20/$TAG/g" shorts.json
+sed -i '' "s/buildsmartpic-20/$TAG/g" shorts.json
 
 # ---------- 4. Update + republish the website ----------
 say_step "4/7 Publishing your tag to the website"
 rm -rf site && git clone -q "$REPO" site
-sed -i '' "s/YOURTAG-20/$TAG/g" site/data.js site/shorts-data.js
+sed -i '' "s/buildsmartpic-20/$TAG/g" site/data.js site/shorts-data.js
 cd site
 if git diff --quiet; then echo "Site already has this tag."; else
   git add -A && git commit -q -m "Set Amazon Associates tag" || true
